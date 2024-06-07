@@ -1,0 +1,174 @@
+<?php
+session_start();
+
+if (!isset($_SESSION['step'])) {
+    $_SESSION['step'] = 'welcome';
+}
+
+$response = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['reset'])) {
+        $_SESSION['step'] = 'welcome';
+        $response;
+    } else {
+        $userMessage = isset($_POST['message']) ? trim($_POST['message']) : '';
+
+        switch ($_SESSION['step']) {
+            case 'welcome':
+                $response = "Olá! Como posso ajudar você hoje? Está procurando comprar, alugar ou vender um imóvel?";
+                $_SESSION['step'] = 'option';
+                break;
+
+            case 'option':
+                if (stripos($userMessage, 'comprar') !== false) {
+                    $response = "Ótimo! Para ajudá-lo melhor, você pode me dizer a localização desejada, faixa de preço e tipo de imóvel que está procurando?";
+                    $_SESSION['step'] = 'buy';
+                } elseif (stripos($userMessage, 'alugar') !== false) {
+                    $response = "Ótimo! Para ajudá-lo melhor, você pode me dizer a localização desejada, faixa de preço e tipo de imóvel que está procurando?";
+                    $_SESSION['step'] = 'rent';
+                } elseif (stripos($userMessage, 'vender') !== false) {
+                    $response = "Perfeito! Vamos começar com alguns detalhes sobre o imóvel que você deseja vender. Poderia fornecer a localização e o tipo de imóvel?";
+                    $_SESSION['step'] = 'sell';
+                } else {
+                    $response = "Desculpe, não entendi. Você está procurando comprar, alugar ou vender um imóvel?";
+                }
+                break;
+                
+            case 'buy':
+                $response = "Encontrei algumas opções que podem te interessar. Você gostaria de vê-las?";
+                $_SESSION['step'] = 'show_properties';
+                break;
+
+            case 'rent':
+                $response = "Encontrei algumas opções que podem te interessar. Você gostaria de vê-las?";
+                $_SESSION['step'] = 'show_properties';
+                break;
+
+            case 'sell':
+                $response = "Obrigado! Vamos prosseguir com a venda. Para agendar uma visita do nosso corretor, poderia me fornecer seu nome, telefone e e-mail?";
+                $_SESSION['step'] = 'capture_seller_info';
+                break;
+            
+                case 'show_properties':
+                    $response = "Aqui estão os detalhes do imóvel: 👉 Apartamento moderno, com todas as comodidades, próximo a parques e áreas de lazer, por apenas R$ xxx. Gostaria de agendar uma visita ou saber mais sobre ele?";
+                    $_SESSION['step'] = 'schedule_visit';
+                    break;
+    
+                case 'capture_seller_info':
+                    $response = "Obrigado! Um de nossos corretores entrará em contato com você em breve para prosseguir com a venda.";
+                    $_SESSION['step'] = 'end';
+                    break;
+    
+                case 'schedule_visit':
+                    $response = "Para agendar uma visita, poderia me informar seu nome?";
+                    $_SESSION['step'] = 'capture_buyer_info';
+                    break;
+    
+                case 'capture_buyer_info':
+                    // Verifica se o nome foi fornecido
+                    if (isset($_POST['nome']) && !empty($_POST['nome'])) {
+                        // Armazena o nome na sessão
+                        $_SESSION['nome'] = htmlspecialchars($_POST['nome'], ENT_QUOTES, 'UTF-8');
+                        $response = "Obrigado, " . $_SESSION['nome'] . "! Um de nossos corretores entrará em contato com você em breve para agendar a visita.";
+                        $_SESSION['step'] = 'end';
+                    } else {
+                        // Se o nome não foi fornecido, solicita novamente
+                        $response = "Por favor, poderia me informar seu nome?";
+                        $_SESSION['step'] = 'capture_buyer_info';
+                    }
+                    break;
+                
+            default:
+            $response = "Olá! Como posso ajudar você hoje? Está procurando comprar, alugar ou vender um imóvel?";
+            $_SESSION['step'] = 'option';
+            break;
+    }
+}
+} else {
+// Caso o método não seja POST
+$response = "Olá! Como posso ajudar você hoje? Está procurando comprar, alugar ou vender um imóvel?";
+$_SESSION['step'] = 'welcome';
+}
+?>
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Agendamento de Visita</title>
+    <style>
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: #b5b1de;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+        h1 {
+            text-align: center;
+            color: #261874;
+        }
+        p {
+            font-size: 17px;
+            color: #261874;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin: 10px 0 5px;
+            color: #261874;
+        }
+        input[type="text"], input[type="hidden"], textarea {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007BFF;
+            color: #fff;
+            cursor: pointer;
+            margin-top: 12px;
+        }
+        
+        button:hover {
+            background-color: #16997e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Agendamento de Visita</h1>
+        <form method="post" action="">
+            <p><?php echo $response; ?></p>
+            <?php if ($_SESSION['step'] == 'capture_buyer_info'): ?>
+                <label for="nome">Nome:</label>
+                <input type="text" id="nome" name="nome">
+            <?php else: ?>
+                <label for="message">Mande um alô pro nosso assistente virtual aqui! 🚀</label>
+                <textarea id="message" name="message" rows="4"></textarea>
+            <?php endif; ?>
+            <button type="submit">Enviar</button>
+            <button type="submit" name="reset">Reiniciar conversa</button>
+        </form>
+    </div>
+</body>
+</html>
